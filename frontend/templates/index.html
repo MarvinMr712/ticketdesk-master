@@ -1,0 +1,973 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TicketDesk – Rock Drill Group</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Barlow+Condensed:wght@600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/styles.css') }}"
+    />
+  </head>
+  <body>
+    <!-- LOGIN -->
+    <div id="login-screen">
+      <div class="login-box">
+        <div class="login-logo">
+          <svg
+            width="110"
+            height="44"
+            viewBox="0 0 200 80"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <text
+              x="4"
+              y="36"
+              font-family="'Barlow Condensed',sans-serif"
+              font-weight="800"
+              font-size="38"
+              fill="#1565a8"
+            >
+              ROCK
+            </text>
+            <text
+              x="4"
+              y="72"
+              font-family="'Barlow Condensed',sans-serif"
+              font-weight="800"
+              font-size="38"
+              fill="#2980d4"
+            >
+              DRILL
+            </text>
+          </svg>
+        </div>
+        <div class="login-title">TicketDesk</div>
+        <div class="login-sub">Inicia sesión para continuar</div>
+        <div id="login-err" class="login-err"></div>
+        <div class="fg">
+          <label>Usuario</label>
+          <input
+            id="login-user"
+            type="text"
+            placeholder="Ej: u23236776 o carlos"
+            onkeydown="if (event.key === 'Enter') doLogin();"
+          />
+        </div>
+        <div class="fg">
+          <label>Contraseña</label>
+          <input
+            id="login-pass"
+            type="password"
+            placeholder="••••••••"
+            onkeydown="if (event.key === 'Enter') doLogin();"
+          />
+        </div>
+        <button
+          class="btn bp"
+          style="width: 100%; justify-content: center"
+          onclick="doLogin()"
+        >
+          Ingresar
+        </button>
+        <div class="login-hint">
+          <strong>Técnico (panel completo):</strong> usuario = código UTP, ej.
+          <em>u23236776</em> · contraseña = mismo código<br />
+          <strong>Usuario final (solo tickets):</strong> carlos / ana / luis /
+          maria / usuario · contraseña <em>1234</em>
+        </div>
+      </div>
+    </div>
+
+    <!-- SIDEBAR -->
+    <aside id="sidebar">
+      <div class="slogo">
+        <svg
+          width="100"
+          height="40"
+          viewBox="0 0 200 80"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <text
+            x="4"
+            y="36"
+            font-family="'Barlow Condensed',sans-serif"
+            font-weight="800"
+            font-size="38"
+            fill="#1565a8"
+          >
+            ROCK
+          </text>
+          <text
+            x="4"
+            y="72"
+            font-family="'Barlow Condensed',sans-serif"
+            font-weight="800"
+            font-size="38"
+            fill="#2980d4"
+          >
+            DRILL
+          </text>
+        </svg>
+      </div>
+      <div class="slbl">Principal</div>
+      <div class="ni active" onclick="goto('dashboard')">
+        <span class="ic">📊</span>Dashboard
+      </div>
+      <div class="ni" onclick="goto('nuevo')">
+        <span class="ic">➕</span>Nuevo Ticket
+      </div>
+      <div class="ni" onclick="goto('tickets')">
+        <span class="ic">🗂</span>Mis Tickets<span class="nb2" id="badge"
+          >0</span
+        >
+      </div>
+      <div class="slbl">Soporte TI</div>
+      <div class="ni" onclick="goto('panel')">
+        <span class="ic">🔧</span>Panel Técnico
+      </div>
+      <div class="ni" onclick="goto('conocimiento')">
+        <span class="ic">📚</span>Base Conocimiento
+      </div>
+      <div class="slbl">Analítica</div>
+      <div class="ni" onclick="goto('ml')">
+        <span class="ic">🤖</span>Predicción ML
+      </div>
+      <div class="slbl">Administración</div>
+      <div class="ni" onclick="goto('admin')">
+        <span class="ic">⚙️</span>Admin Usuarios
+      </div>
+      <div class="sf"></div>
+      <div class="sfoot">
+        TicketDesk MVP v1.0 · Rock Drill Group<br />Innovación y Transformación
+        Digital – UTP
+      </div>
+    </aside>
+
+    <!-- TOPBAR -->
+    <header id="topbar">
+      <span class="pt" id="ptitle">Dashboard</span>
+      <div class="sp"></div>
+      <button class="nb" onclick="toast('🔔 2 notificaciones nuevas')">
+        🔔<span class="nd"></span>
+      </button>
+      <button class="nb" title="Cerrar sesión" onclick="logout()">🚪</button>
+      <div class="upill">
+        <div class="av" id="user-av">–</div>
+        <span class="un" id="user-name">–</span>
+      </div>
+    </header>
+
+    <main id="main">
+      <!-- ══ DASHBOARD ══ -->
+      <div class="screen active" id="screen-dashboard">
+        <div class="stitle">Dashboard General</div>
+        <div class="ssub">
+          Vista en tiempo real — <span id="dash-fecha"></span>
+        </div>
+        <div class="kgrid" id="kgrid">
+          <div class="loading">⏳ Cargando KPIs...</div>
+        </div>
+        <div class="dgrid">
+          <div class="card">
+            <div class="ch">📈 Tickets por Categoría</div>
+            <div style="padding: 16px 20px 10px">
+              <div class="bars" id="chart-cat">
+                <div class="loading">Cargando...</div>
+              </div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="ch">👨‍💻 Carga por Técnico</div>
+            <div style="padding: 16px 20px" id="chart-tec">
+              <div class="loading">Cargando...</div>
+            </div>
+          </div>
+        </div>
+        <div class="card" style="margin-top: 20px">
+          <div class="ch">🕐 Tickets Recientes</div>
+          <div class="tw">
+            <table>
+              <thead>
+                <tr>
+                  <th>N° Ticket</th>
+                  <th>Descripción</th>
+                  <th>Categoría</th>
+                  <th>Prioridad</th>
+                  <th>Estado</th>
+                  <th>Técnico</th>
+                  <th>Fecha</th>
+                </tr>
+              </thead>
+              <tbody id="dash-tbl"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ NUEVO TICKET ══ -->
+      <div class="screen" id="screen-nuevo">
+        <div class="stitle">Registrar Nueva Incidencia</div>
+        <div class="ssub">
+          Complete el formulario — el sistema asignará técnico y predecirá el
+          tiempo de resolución
+        </div>
+        <div class="card" style="max-width: 780px">
+          <div class="ch" style="justify-content: space-between">
+            <span>📋 Formulario de Incidencia</span>
+            <span class="tnum" id="prev-num">TKT-2026-????</span>
+          </div>
+          <div style="padding: 20px">
+            <div class="fgrid">
+              <div class="fg">
+                <label>Categoría *</label>
+                <select id="f-cat" onchange="onCatChange()">
+                  <option value="">— Seleccione —</option>
+                  <option>ERP Corporativo</option>
+                  <option>Red / Internet</option>
+                  <option>Hardware</option>
+                  <option>Software</option>
+                  <option>Impresoras</option>
+                  <option>Otros</option>
+                </select>
+              </div>
+              <div class="fg">
+                <label>Área solicitante *</label>
+                <select id="f-area" onchange="onAreaChange()">
+                  <option value="">— Seleccione —</option>
+                  <option>Administración</option>
+                  <option>Campo / Operaciones</option>
+                  <option>Logística</option>
+                  <option>RRHH</option>
+                  <option>Contabilidad</option>
+                </select>
+              </div>
+              <div class="fg">
+                <label>Sistema afectado</label>
+                <input
+                  id="f-sis"
+                  type="text"
+                  placeholder="Ej: ERP – Módulo Planillas"
+                />
+              </div>
+              <div class="fg">
+                <label>Solicitante</label>
+                <input id="f-usr" type="text" value="Carlos Mendoza" />
+              </div>
+              <div class="fg full">
+                <label>Descripción del problema *</label>
+                <textarea
+                  id="f-desc"
+                  rows="4"
+                  placeholder="Describa el problema, mensaje de error, pasos para reproducirlo..."
+                ></textarea>
+              </div>
+              <div class="fg full">
+                <label>Prioridad *</label>
+                <div
+                  style="
+                    margin-bottom: 6px;
+                    font-size: 12px;
+                    color: var(--blue);
+                  "
+                  id="knn-hint"
+                ></div>
+                <div class="pbtn">
+                  <button class="pb Alta" onclick="setPrio('Alta', this)">
+                    🔴 Alta
+                  </button>
+                  <button class="pb Media sel" onclick="setPrio('Media', this)">
+                    🟡 Media
+                  </button>
+                  <button class="pb Baja" onclick="setPrio('Baja', this)">
+                    🟢 Baja
+                  </button>
+                </div>
+              </div>
+              <div class="fg full">
+                <label>Adjuntar captura (opcional)</label>
+                <input
+                  type="file"
+                  id="f-file"
+                  accept=".png,.jpg,.jpeg,.pdf"
+                  style="display: none"
+                  onchange="onFileChange()"
+                />
+                <div
+                  class="dz"
+                  id="dz-label"
+                  onclick="document.getElementById('f-file').click()"
+                >
+                  📎 Arrastra archivos aquí o haz clic<br />
+                  <span style="font-size: 11px; opacity: 0.7"
+                    >PNG, JPG, PDF – máx. 5MB</span
+                  >
+                </div>
+              </div>
+              <div class="fg full" id="ml-sug" style="display: none">
+                <div class="mlbox">
+                  <span>💡</span>
+                  <div>
+                    <strong>Sugerencia IA:</strong> <span id="sug-txt"></span>
+                    <a
+                      href="#"
+                      style="color: #0d6e40; font-weight: 700; margin-left: 6px"
+                      onclick="
+                        goto('conocimiento');
+                        return false;
+                      "
+                      >Ver solución →</a
+                    >
+                  </div>
+                </div>
+              </div>
+              <div class="fg full" id="ml-time" style="display: none">
+                <div
+                  class="mlbox"
+                  style="background: var(--ibg); border-color: var(--blue-l)"
+                >
+                  <span>⏱</span>
+                  <div style="color: var(--blue)">
+                    <strong>Predicción Árbol de Regresión:</strong>
+                    <span id="time-txt"></span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="brow">
+              <button class="btn bg" onclick="goto('dashboard')">
+                Cancelar
+              </button>
+              <button class="btn bp" id="btn-enviar" onclick="enviarTicket()">
+                ✅ Enviar Ticket
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ MIS TICKETS ══ -->
+      <div class="screen" id="screen-tickets">
+        <div class="stitle">Mis Tickets</div>
+        <div class="ssub">Seguimiento de incidencias registradas</div>
+        <div class="card">
+          <div
+            class="ch"
+            style="justify-content: space-between; flex-wrap: wrap; gap: 8px"
+          >
+            <span>🗂 Lista de Tickets</span>
+            <div
+              style="
+                display: flex;
+                gap: 8px;
+                align-items: center;
+                flex-wrap: wrap;
+              "
+            >
+              <input
+                type="text"
+                id="search-tickets"
+                placeholder="🔍 Buscar por cualquier dato..."
+                oninput="filterTickets()"
+                style="
+                  font-size: 13px;
+                  padding: 6px 10px;
+                  border-radius: 6px;
+                  border: 1.5px solid var(--border);
+                  min-width: 200px;
+                "
+              />
+              <select
+                id="f-estado"
+                onchange="loadTickets()"
+                style="font-size: 12px; padding: 4px 8px; border-radius: 6px"
+              >
+                <option value="">Todos los estados</option>
+                <option>Pendiente</option>
+                <option>En Proceso</option>
+                <option>Resuelto</option>
+                <option>Escalado</option>
+              </select>
+              <button class="btn bp bsm" onclick="goto('nuevo')">
+                + Nuevo
+              </button>
+            </div>
+          </div>
+          <div class="tw">
+            <table>
+              <thead>
+                <tr>
+                  <th>N° Ticket</th>
+                  <th>Descripción</th>
+                  <th>Categoría</th>
+                  <th>Prioridad</th>
+                  <th>Estado</th>
+                  <th>Técnico</th>
+                  <th>Fecha</th>
+                  <th id="th-accion">Acción</th>
+                </tr>
+              </thead>
+              <tbody id="tbl-tickets"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="dp" id="det-panel" style="display: none">
+          <div class="dphead">
+            <span id="det-id"></span><span id="det-est"></span>
+          </div>
+          <div
+            style="
+              display: grid;
+              grid-template-columns: 1fr 1fr;
+              gap: 12px;
+              margin-bottom: 14px;
+              font-size: 13px;
+            "
+          >
+            <div>
+              <div
+                style="
+                  color: var(--muted);
+                  font-size: 11px;
+                  font-weight: 700;
+                  text-transform: uppercase;
+                "
+              >
+                Descripción
+              </div>
+              <div
+                id="det-desc"
+                style="font-weight: 600; margin-top: 2px"
+              ></div>
+            </div>
+            <div>
+              <div
+                style="
+                  color: var(--muted);
+                  font-size: 11px;
+                  font-weight: 700;
+                  text-transform: uppercase;
+                "
+              >
+                Técnico
+              </div>
+              <div id="det-tec" style="font-weight: 600; margin-top: 2px"></div>
+            </div>
+            <div>
+              <div
+                style="
+                  color: var(--muted);
+                  font-size: 11px;
+                  font-weight: 700;
+                  text-transform: uppercase;
+                "
+              >
+                Categoría
+              </div>
+              <div id="det-cat" style="margin-top: 2px"></div>
+            </div>
+            <div>
+              <div
+                style="
+                  color: var(--muted);
+                  font-size: 11px;
+                  font-weight: 700;
+                  text-transform: uppercase;
+                "
+              >
+                Prioridad
+              </div>
+              <div id="det-prio" style="margin-top: 2px"></div>
+            </div>
+            <div>
+              <div
+                style="
+                  color: var(--muted);
+                  font-size: 11px;
+                  font-weight: 700;
+                  text-transform: uppercase;
+                "
+              >
+                Adjunto
+              </div>
+              <div id="det-adj" style="margin-top: 2px"></div>
+            </div>
+          </div>
+          <div
+            style="
+              font-size: 11px;
+              font-weight: 700;
+              color: var(--muted);
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+              margin-bottom: 6px;
+            "
+          >
+            Estado del proceso
+          </div>
+          <div class="tl" id="det-tl"></div>
+          <div
+            style="
+              font-size: 11px;
+              font-weight: 700;
+              color: var(--muted);
+              text-transform: uppercase;
+              margin: 14px 0 6px;
+            "
+          >
+            Historial
+          </div>
+          <div id="det-hist"></div>
+        </div>
+      </div>
+
+      <!-- ══ PANEL TÉCNICO ══ -->
+      <div class="screen" id="screen-panel">
+        <div class="stitle">Panel del Técnico</div>
+        <div class="ssub">
+          Gestión y reasignación de tickets —
+          <span id="panel-tec-nombre"></span>
+        </div>
+        <div class="kgrid">
+          <div class="kcard y">
+            <div class="kl">Pendientes</div>
+            <div class="kv" id="p-pend">–</div>
+            <div class="kic">⏳</div>
+          </div>
+          <div class="kcard b">
+            <div class="kl">En Proceso</div>
+            <div class="kv" id="p-proc">–</div>
+            <div class="kic">⚙</div>
+          </div>
+          <div class="kcard g">
+            <div class="kl">Cerrados Hoy</div>
+            <div class="kv" id="p-cerr">–</div>
+            <div class="kic">✅</div>
+          </div>
+          <div class="kcard r">
+            <div class="kl">Alta Prioridad</div>
+            <div class="kv" id="p-alta">–</div>
+            <div class="kic">🔴</div>
+          </div>
+        </div>
+        <div class="card">
+          <div
+            class="ch"
+            style="justify-content: space-between; flex-wrap: wrap; gap: 8px"
+          >
+            <span>📋 Tickets Asignados</span>
+            <input
+              type="text"
+              id="search-panel"
+              placeholder="🔍 Buscar..."
+              oninput="filterPanel()"
+              style="
+                font-size: 13px;
+                padding: 6px 10px;
+                border-radius: 6px;
+                border: 1.5px solid var(--border);
+                min-width: 200px;
+              "
+            />
+          </div>
+          <div class="tw">
+            <table>
+              <thead>
+                <tr>
+                  <th>N° Ticket</th>
+                  <th>Descripción</th>
+                  <th>Categoría</th>
+                  <th>Prioridad</th>
+                  <th>Estado</th>
+                  <th>Asignar Técnico</th>
+                </tr>
+              </thead>
+              <tbody id="tbl-panel"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ PANEL DE CIERRE (GLOBAL) ══ -->
+      <div class="dp" id="close-panel" style="display: none; margin-top: 20px">
+        <div class="dphead"><span id="cp-id">Atendiendo ticket</span></div>
+        <div class="fgrid">
+          <div class="fg">
+            <label>Estado del ticket</label>
+            <select
+              id="t-estado-sel"
+              style="
+                font-size: 13px;
+                padding: 8px 10px;
+                border-radius: 7px;
+                border: 1.5px solid var(--border);
+                width: 100%;
+              "
+            >
+              <option value="Pendiente">Pendiente</option>
+              <option value="En Proceso">En Proceso</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label>Prioridad (Urgencia)</label>
+            <select
+              id="t-prioridad-sel"
+              style="
+                font-size: 13px;
+                padding: 8px 10px;
+                border-radius: 7px;
+                border: 1.5px solid var(--border);
+                width: 100%;
+              "
+            >
+              <option value="Alta">🔴 Alta</option>
+              <option value="Media" selected>🟡 Media</option>
+              <option value="Baja">🟢 Baja</option>
+            </select>
+          </div>
+          <div class="fg" style="display: flex; align-items: flex-end">
+            <button
+              class="btn bp bsm"
+              style="width: 100%"
+              onclick="actualizarEstado()"
+            >
+              💾 Guardar cambios
+            </button>
+          </div>
+          <div class="fg full">
+            <label>Categoría del ticket</label>
+            <select
+              id="t-categoria-sel"
+              style="
+                font-size: 13px;
+                padding: 8px 10px;
+                border-radius: 7px;
+                border: 1.5px solid var(--border);
+                width: 100%;
+              "
+            >
+              <option value="ERP Corporativo">ERP Corporativo</option>
+              <option value="Red / Internet">Red / Internet</option>
+              <option value="Hardware">Hardware</option>
+              <option value="Software">Software</option>
+              <option value="Impresoras">Impresoras</option>
+              <option value="Otros">Otros</option>
+            </select>
+          </div>
+          <div class="fg full">
+            <label>Diagnóstico</label
+            ><textarea
+              id="t-diag"
+              rows="3"
+              placeholder="Causa raíz del problema..."
+            ></textarea>
+          </div>
+          <div class="fg full">
+            <label>Solución aplicada *</label
+            ><textarea
+              id="t-sol"
+              rows="3"
+              placeholder="Pasos aplicados para resolver..."
+            ></textarea>
+          </div>
+        </div>
+        <div style="margin-top: 12px">
+          <div class="mlbox">
+            💡
+            <span
+              >Al guardar, esta solución se archivará en la
+              <strong>Base de Conocimiento</strong></span
+            >
+          </div>
+        </div>
+        <div class="brow" style="flex-wrap: wrap; row-gap: 8px">
+          <button
+            class="btn bg"
+            onclick="
+              document.getElementById('close-panel').style.display = 'none'
+            "
+          >
+            Cancelar
+          </button>
+          <select
+            id="t-tecnico-sel"
+            style="
+              font-size: 13px;
+              padding: 8px 10px;
+              border-radius: 7px;
+              border: 1.5px solid var(--border);
+            "
+          ></select>
+          <button class="btn br bsm" onclick="escalarTicket()">
+            ⬆ Escalar
+          </button>
+          <button class="btn bgreen" onclick="cerrarTicket()">
+            ✅ Cerrar Ticket
+          </button>
+        </div>
+      </div>
+
+      <!-- ══ BASE CONOCIMIENTO ══ -->
+      <div class="screen" id="screen-conocimiento">
+        <div class="stitle">Base de Conocimiento</div>
+        <div class="ssub">
+          Repositorio de soluciones documentadas — búsqueda inteligente
+        </div>
+        <div style="display: flex; gap: 10px; margin-bottom: 20px">
+          <input
+            type="text"
+            id="kb-q"
+            placeholder="🔍 Buscar por categoría, sistema o descripción..."
+            style="flex: 1; font-size: 15px"
+            oninput="loadKB()"
+          />
+          <select
+            id="kb-cat"
+            style="
+              font-size: 13px;
+              padding: 8px 12px;
+              border-radius: 7px;
+              border: 1.5px solid var(--border);
+            "
+            onchange="loadKB()"
+          >
+            <option value="">Todas las categorías</option>
+            <option>ERP Corporativo</option>
+            <option>Red / Internet</option>
+            <option>Hardware</option>
+            <option>Software</option>
+            <option>Impresoras</option>
+          </select>
+        </div>
+        <div id="kb-list"><div class="loading">Cargando...</div></div>
+      </div>
+
+      <!-- ══ ML / PREDICCIÓN ══ -->
+      <div class="screen" id="screen-ml">
+        <div class="stitle">Módulo de Machine Learning</div>
+        <div class="ssub">
+          3 modelos implementados: Árbol de Clasificación, Árbol de Regresión y
+          Random Forest
+        </div>
+
+        <!-- Predictor interactivo -->
+        <div class="card" style="margin-bottom: 20px">
+          <div class="ch">🔮 Predictor Interactivo</div>
+          <div style="padding: 16px 20px">
+            <div
+              style="
+                display: grid;
+                grid-template-columns: 1fr 1fr 1fr auto;
+                gap: 12px;
+                align-items: end;
+              "
+            >
+              <div class="fg">
+                <label>Categoría</label>
+                <select id="ml-cat">
+                  <option>ERP Corporativo</option>
+                  <option>Red / Internet</option>
+                  <option>Hardware</option>
+                  <option>Software</option>
+                  <option>Impresoras</option>
+                </select>
+              </div>
+              <div class="fg">
+                <label>Área</label>
+                <select id="ml-area">
+                  <option>Administración</option>
+                  <option>Campo / Operaciones</option>
+                  <option>Logística</option>
+                  <option>RRHH</option>
+                  <option>Contabilidad</option>
+                </select>
+              </div>
+              <div class="fg">
+                <label>Prioridad</label>
+                <select id="ml-prio">
+                  <option>Alta</option>
+                  <option selected>Media</option>
+                  <option>Baja</option>
+                </select>
+              </div>
+              <button class="btn bp" onclick="runPredictor()">
+                🤖 Predecir
+              </button>
+            </div>
+            <div id="pred-result" style="margin-top: 14px; display: none">
+              <div
+                style="
+                  display: grid;
+                  grid-template-columns: repeat(2, 1fr);
+                  gap: 10px;
+                "
+              >
+                <div
+                  class="mlbox"
+                  style="background: var(--ibg); border-color: var(--blue-l)"
+                >
+                  <span>📈</span>
+                  <div style="color: var(--blue)">
+                    <strong>Tiempo (Árbol de Regresión):</strong><br />
+                    <span style="font-size: 20px; font-weight: 800" id="pr-time"
+                      >–</span
+                    >
+                    horas
+                  </div>
+                </div>
+                <div
+                  class="mlbox"
+                  style="background: #f3e5f5; border-color: #7b1fa2"
+                >
+                  <span>🌳</span>
+                  <div style="color: #7b1fa2">
+                    <strong>Prioridad (Árbol Clasificación):</strong><br />
+                    <span
+                      style="font-size: 18px; font-weight: 800"
+                      id="pr-prio-arbol"
+                      >–</span
+                    >
+                    <span
+                      style="font-size: 11px; color: var(--muted)"
+                      id="pr-conf-arbol"
+                    ></span>
+                  </div>
+                </div>
+                <div
+                  class="mlbox"
+                  style="
+                    background: #e8f5e9;
+                    border-color: #2e7d32;
+                    grid-column: span 2;
+                  "
+                >
+                  <span>🌲</span>
+                  <div style="color: #2e7d32">
+                    <strong>Prioridad (Random Forest - Ensamble):</strong><br />
+                    <span style="font-size: 18px; font-weight: 800" id="pr-prio"
+                      >–</span
+                    >
+                    <span
+                      style="font-size: 11px; color: var(--muted)"
+                      id="pr-conf"
+                    ></span>
+                  </div>
+                </div>
+              </div>
+              <div
+                style="
+                  margin-top: 10px;
+                  font-size: 11px;
+                  color: var(--muted);
+                  text-align: right;
+                "
+              >
+                Modelos: Árbol de Regresión · Árbol de Clasificación · Random
+                Forest
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Configuración de Features -->
+        <div class="card" style="margin-bottom: 20px">
+          <div class="ch">⚙ Seleccionar Features (X) para entrenar</div>
+          <div style="padding: 16px 20px">
+            <div style="display: flex; gap: 16px; flex-wrap: wrap; align-items: center;">
+              <label style="font-weight: 400; text-transform: none; display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                <input type="checkbox" id="feat-categoria" checked onchange="onFeatureChange()" onclick="onFeatureChange()"> Categoría
+              </label>
+              <label style="font-weight: 400; text-transform: none; display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                <input type="checkbox" id="feat-area" checked onchange="onFeatureChange()" onclick="onFeatureChange()"> Área
+              </label>
+              <label style="font-weight: 400; text-transform: none; display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                <input type="checkbox" id="feat-prioridad" onchange="onFeatureChange()" onclick="onFeatureChange()"> Prioridad
+              </label>
+              <label style="font-weight: 400; text-transform: none; display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                <input type="checkbox" id="feat-sistema" onchange="onFeatureChange()" onclick="onFeatureChange()"> Sistema
+              </label>
+              <label style="font-weight: 400; text-transform: none; display: flex; align-items: center; gap: 4px; cursor: pointer;">
+                <input type="checkbox" id="feat-mes" onchange="onFeatureChange()" onclick="onFeatureChange()"> Mes
+              </label>
+              <button class="btn bp bsm" onclick="loadML()">🔄 Re-entrenar</button>
+            </div>
+            <div style="margin-top: 8px; font-size: 12px; color: var(--muted);">
+              <span id="feat-info">Features actuales: Categoría, Área</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="mlgrid" id="ml-content">
+          <div class="loading">⏳ Entrenando modelos...</div>
+        </div>
+      </div>
+
+      <!-- Admin -->
+      <div class="screen" id="screen-admin">
+        <div class="card">
+          <div class="ch">👥 Administración de Usuarios</div>
+          <div class="card-body">
+            <div style="display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 16px;">
+              <input type="text" id="adm-username" placeholder="Usuario" style="flex:1;min-width:120px;">
+              <input type="password" id="adm-password" placeholder="Contraseña" style="flex:1;min-width:120px;">
+              <input type="text" id="adm-nombre" placeholder="Nombre completo" style="flex:2;min-width:180px;">
+                <select id="adm-rol" style="flex:1;min-width:100px;">
+                  <option value="tecnico">Técnico</option>
+                  <option value="usuario">Usuario</option>
+                  <option value="admin">Admin</option>
+                </select>
+              <input type="text" id="adm-area" placeholder="Área (opcional)" style="flex:1;min-width:120px;">
+              <button class="btn bp" onclick="crearUsuario()">➕ Crear</button>
+            </div>
+            <div id="adm-err" style="color:var(--red);font-size:13px;margin-bottom:8px;display:none;"></div>
+            <!-- Editar -->
+            <div id="adm-edit-box" style="display:none;background:var(--ibg);padding:12px;border-radius:8px;margin-bottom:12px;">
+              <div style="font-weight:600;margin-bottom:8px;font-size:14px;">✏️ Editar usuario</div>
+              <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                <input type="text" id="adm-edit-nombre" placeholder="Nombre" style="flex:2;min-width:140px;">
+                <input type="password" id="adm-edit-pass" placeholder="Nueva contraseña (dejar vacío si no cambia)" style="flex:2;min-width:180px;">
+                <input type="text" id="adm-edit-area" placeholder="Área" style="flex:1;min-width:100px;">
+                <button class="btn bp" onclick="guardarEdicion()">💾 Guardar</button>
+                <button class="btn br" onclick="document.getElementById('adm-edit-box').style.display='none'">Cancelar</button>
+              </div>
+              <div id="adm-edit-err" style="color:var(--red);font-size:13px;margin-top:6px;display:none;"></div>
+            </div>
+            <table class="dt">
+              <thead><tr><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Área</th><th>Acción</th></tr></thead>
+              <tbody id="tbl-usuarios"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- Confirm overlay -->
+    <div id="cov">
+      <div class="cbox">
+        <div class="ctick">✅</div>
+        <h3>¡Ticket Registrado!</h3>
+        <p>
+          Tu incidencia fue enviada al área de TI. Técnico asignado
+          automáticamente.
+        </p>
+        <div class="cnum" id="c-num">TKT-2026-????</div>
+        <div class="ctime" id="c-time"></div>
+        <br />
+        <button
+          class="btn bp"
+          style="width: 100%; margin-top: 12px"
+          onclick="closeCov()"
+        >
+          Ver mis tickets →
+        </button>
+      </div>
+    </div>
+    <div id="toast"></div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+  </body>
+</html>
