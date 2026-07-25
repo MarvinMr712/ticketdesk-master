@@ -48,7 +48,7 @@ async function doLogin() {
     currentUser = d;
     localStorage.setItem("td_user", JSON.stringify(d));
     applyLogin();
-  } catch (e) { errEl.textContent = "❌ No se pudo conectar al servidor. Verifica que python app.py esté corriendo."; errEl.style.display = "block" }
+  } catch (e) { errEl.textContent = "❌ No se pudo conectar al servidor."; errEl.style.display = "block" }
 }
 
 function logout() {
@@ -167,7 +167,7 @@ async function loadDash() {
       </tr>`).join("");
     const pend = d.por_estado.find(e => e.estado === "Pendiente" || e.estado === "En Proceso");
     document.getElementById("badge").textContent = pend ? pend.total : 0;
-  } catch (e) { document.getElementById("kgrid").innerHTML = `<div style="color:var(--red);padding:20px;grid-column:1/-1">❌ Error conectando al servidor Flask.<br>Asegúrate de que <strong>python app.py</strong> esté corriendo en el puerto 5000.</div>` }
+  } catch (e) { document.getElementById("kgrid").innerHTML = `<div style="color:var(--red);padding:20px;grid-column:1/-1">❌ Error al cargar KPIs. Verifica conexión con el servidor.</div>` }
 }
 
 // ── NUEVO TICKET ──
@@ -244,7 +244,7 @@ async function enviarTicket() {
     document.getElementById("knn-hint").textContent = "";
     selPrio = "Media"; document.querySelectorAll(".pb").forEach(b => b.classList.remove("sel"));
     document.querySelector(".pb.Media").classList.add("sel");
-  } catch (e) { toast("❌ Error al enviar. Verifica que Flask esté corriendo.") }
+  } catch (e) { toast("❌ Error al enviar. Verifica conexión con el servidor.") }
   btn.innerHTML = "✅ Enviar Ticket"; btn.disabled = false;
 }
 function closeCov() { document.getElementById("cov").classList.remove("show"); goto("tickets") }
@@ -401,6 +401,8 @@ async function actualizarEstado() {
   toast("💾 " + (d.mensaje || d.error));
   loadPanel();
   if (document.getElementById("screen-tickets").classList.contains("active")) loadTickets();
+  if (document.getElementById("screen-panel-ti").classList.contains("active")) loadPanelTI();
+  if (document.getElementById("screen-tickets-ti").classList.contains("active")) loadTicketsTI();
 }
 
 async function cerrarTicket() {
@@ -416,6 +418,8 @@ async function cerrarTicket() {
   document.getElementById("close-panel").style.display = "none";
   loadPanel();
   if (document.getElementById("screen-tickets").classList.contains("active")) loadTickets();
+  if (document.getElementById("screen-panel-ti").classList.contains("active")) loadPanelTI();
+  if (document.getElementById("screen-tickets-ti").classList.contains("active")) loadTicketsTI();
 }
 
 async function escalarTicket() {
@@ -435,6 +439,8 @@ async function escalarTicket() {
   document.getElementById("close-panel").style.display = "none";
   loadPanel();
   if (document.getElementById("screen-tickets").classList.contains("active")) loadTickets();
+  if (document.getElementById("screen-panel-ti").classList.contains("active")) loadPanelTI();
+  if (document.getElementById("screen-tickets-ti").classList.contains("active")) loadTicketsTI();
 }
 
 // ── DETALLE ──
@@ -623,7 +629,7 @@ async function loadML() {
           </div>
         </div>
       </div>`;
-  } catch (e) { console.error(e); document.getElementById("ml-content").innerHTML = `<div style="color:var(--red);padding:20px;grid-column:1/-1">❌ Error conectando al servidor Flask.</div>` }
+  } catch (e) { console.error(e); document.getElementById("ml-content").innerHTML = `<div style="color:var(--red);padding:20px;grid-column:1/-1">❌ Error conectando al servidor.</div>` }
 }
 
 async function runPredictor() {
