@@ -5,6 +5,11 @@ let toastT;
 let currentUser = null;
 let tecnicosCache = null;
 
+function toggleSidebar() {
+  document.getElementById("sidebar").classList.toggle("open");
+  document.getElementById("sidebar-overlay").classList.toggle("show");
+}
+
 // ── AUTH / LOGIN ──
 const ROLE_SCREENS = {
   tecnico: ["dashboard", "nuevo", "tickets", "panel", "conocimiento", "ml"],
