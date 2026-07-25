@@ -14,13 +14,13 @@ def login():
     if not username or not password:
         return jsonify({"error": "Usuario y contrase\u00f1a son requeridos"}), 400
 
-    # Buscar en las 3 tablas
-    for tabla in ["usuarios", "tecnicos", "admin"]:
+    # Buscar en las 4 tablas
+    for tabla in ["usuarios", "tecnicos", "admin", "area_ti"]:
         result = sup.table(tabla).select("*").eq("username", username).execute()
         if result.data:
             user = result.data[0]
             if check_password_hash(user["password"], password):
-                rol_map = {"usuarios": "usuario", "tecnicos": "tecnico", "admin": "admin"}
+                rol_map = {"usuarios": "usuario", "tecnicos": "tecnico", "admin": "admin", "area_ti": "areati"}
                 return jsonify({
                     "username": user["username"],
                     "nombre": user["nombre"],

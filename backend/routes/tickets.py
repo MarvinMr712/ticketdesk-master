@@ -18,6 +18,7 @@ def listar():
     categoria = request.args.get("categoria")
     usuario = request.args.get("usuario")
     tecnico = request.args.get("tecnico")
+    equipo = request.args.get("equipo")
     limit = request.args.get("limit", 50, type=int)
 
     query = sup.table("tickets").select("*")
@@ -29,6 +30,10 @@ def listar():
         query = query.eq("usuario", usuario)
     if tecnico:
         query = query.eq("tecnico", tecnico)
+    if equipo and equipo == "Area TI":
+        miembros = sup.table("area_ti").select("nombre").execute().data
+        nombres = [m["nombre"] for m in miembros] + ["Area TI", "\u00c1rea TI"]
+        query = query.in_("tecnico", nombres)
     query = query.order("fecha_creacion", desc=True).limit(limit)
 
     return jsonify(query.execute().data)

@@ -130,6 +130,16 @@
       <div class="ni" onclick="goto('panel')">
         <span class="ic">🔧</span>Panel Técnico
       </div>
+      <div class="slbl">Área TI</div>
+      <div class="ni" onclick="goto('dash-ti')">
+        <span class="ic">📊</span>Dashboard TI
+      </div>
+      <div class="ni" onclick="goto('tickets-ti')">
+        <span class="ic">🗂</span>Tickets TI<span class="nb2" id="badge-ti">0</span>
+      </div>
+      <div class="ni" onclick="goto('panel-ti')">
+        <span class="ic">🔧</span>Panel TI
+      </div>
       <div class="ni" onclick="goto('conocimiento')">
         <span class="ic">📚</span>Base Conocimiento
       </div>
@@ -693,6 +703,7 @@
           >
             Cancelar
           </button>
+          <div id="escalar-row" style="display: flex; gap: 8px; align-items: center">
           <select
             id="t-tecnico-sel"
             style="
@@ -705,9 +716,98 @@
           <button class="btn br bsm" onclick="escalarTicket()">
             ⬆ Escalar
           </button>
+          </div>
           <button class="btn bgreen" onclick="cerrarTicket()">
             ✅ Cerrar Ticket
           </button>
+        </div>
+      </div>
+
+      <!-- ══ DASHBOARD TI ══ -->
+      <div class="screen" id="screen-dash-ti">
+        <div class="stitle">Dashboard Área TI</div>
+        <div class="ssub">Métricas del equipo TI — <span id="dash-fecha-ti"></span></div>
+        <div class="kgrid" id="kgrid-ti">
+          <div class="loading">⏳ Cargando KPIs...</div>
+        </div>
+        <div class="dgrid">
+          <div class="card">
+            <div class="ch">📈 Tickets por Categoría</div>
+            <div style="padding: 16px 20px 10px">
+              <div class="bars" id="chart-cat-ti"><div class="loading">Cargando...</div></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="ch">👨‍💻 Carga por Técnico</div>
+            <div style="padding: 16px 20px" id="chart-tec-ti"><div class="loading">Cargando...</div></div>
+          </div>
+        </div>
+        <div class="card" style="margin-top: 20px">
+          <div class="ch">🕐 Tickets Recientes</div>
+          <div class="tw">
+            <table>
+              <thead>
+                <tr><th>N° Ticket</th><th>Descripción</th><th>Categoría</th><th>Prioridad</th><th>Estado</th><th>Técnico</th><th>Fecha</th></tr>
+              </thead>
+              <tbody id="dash-tbl-ti"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ TICKETS TI ══ -->
+      <div class="screen" id="screen-tickets-ti">
+        <div class="stitle">Tickets del Equipo TI</div>
+        <div class="ssub">Todos los tickets asignados al equipo</div>
+        <div class="card">
+          <div class="ch" style="justify-content: space-between; flex-wrap: wrap; gap: 8px">
+            <span>🗂 Lista de Tickets</span>
+            <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap">
+              <input type="text" id="search-tickets-ti" placeholder="🔍 Buscar..." oninput="filterTicketsTI()" style="font-size:13px;padding:6px 10px;border-radius:6px;border:1.5px solid var(--border);min-width:200px;" />
+              <select id="f-estado-ti" onchange="loadTicketsTI()" style="font-size:12px;padding:4px 8px;border-radius:6px">
+                <option value="">Todos los estados</option>
+                <option>Pendiente</option>
+                <option>En Proceso</option>
+                <option>Resuelto</option>
+                <option>Escalado</option>
+              </select>
+              <button class="btn bp bsm" onclick="goto('nuevo')">+ Nuevo</button>
+            </div>
+          </div>
+          <div class="tw">
+            <table>
+              <thead>
+                <tr><th>N° Ticket</th><th>Descripción</th><th>Categoría</th><th>Prioridad</th><th>Estado</th><th>Técnico</th><th>Fecha</th><th>Acción</th></tr>
+              </thead>
+              <tbody id="tbl-tickets-ti"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ PANEL TI ══ -->
+      <div class="screen" id="screen-panel-ti">
+        <div class="stitle">Panel del Equipo TI</div>
+        <div class="ssub">Gestión de tickets del equipo — <span id="panel-ti-nombre"></span></div>
+        <div class="kgrid" id="kgrid-panel-ti">
+          <div class="kcard y"><div class="kl">Pendientes</div><div class="kv" id="pt-pend">–</div><div class="kic">⏳</div></div>
+          <div class="kcard b"><div class="kl">En Proceso</div><div class="kv" id="pt-proc">–</div><div class="kic">⚙</div></div>
+          <div class="kcard g"><div class="kl">Cerrados Hoy</div><div class="kv" id="pt-cerr">–</div><div class="kic">✅</div></div>
+          <div class="kcard r"><div class="kl">Alta Prioridad</div><div class="kv" id="pt-alta">–</div><div class="kic">🔴</div></div>
+        </div>
+        <div class="card">
+          <div class="ch" style="justify-content: space-between; flex-wrap: wrap; gap: 8px">
+            <span>📋 Tickets del Equipo</span>
+            <input type="text" id="search-panel-ti" placeholder="🔍 Buscar..." oninput="filterPanelTI()" style="font-size:13px;padding:6px 10px;border-radius:6px;border:1.5px solid var(--border);min-width:200px;" />
+          </div>
+          <div class="tw">
+            <table>
+              <thead>
+                <tr><th>N° Ticket</th><th>Descripción</th><th>Categoría</th><th>Prioridad</th><th>Estado</th></tr>
+              </thead>
+              <tbody id="tbl-panel-ti"></tbody>
+            </table>
+          </div>
         </div>
       </div>
 
@@ -919,6 +1019,7 @@
                   <option value="tecnico">Técnico</option>
                   <option value="usuario">Usuario</option>
                   <option value="admin">Admin</option>
+                  <option value="areati">Área TI</option>
                 </select>
               <input type="text" id="adm-area" placeholder="Área (opcional)" style="flex:1;min-width:120px;">
               <button class="btn bp" onclick="crearUsuario()">➕ Crear</button>

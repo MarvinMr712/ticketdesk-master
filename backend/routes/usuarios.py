@@ -6,8 +6,8 @@ from utils.validators import require_fields
 usuarios_bp = Blueprint("usuarios", __name__)
 sup = db.supabase
 
-TABLA_POR_ROL = {"usuario": "usuarios", "tecnico": "tecnicos", "admin": "admin"}
-TABLAS = {"usuarios": "usuario", "tecnicos": "tecnico", "admin": "admin"}
+TABLA_POR_ROL = {"usuario": "usuarios", "tecnico": "tecnicos", "admin": "admin", "areati": "area_ti"}
+TABLAS = {"usuarios": "usuario", "tecnicos": "tecnico", "admin": "admin", "area_ti": "areati"}
 
 
 @usuarios_bp.route("/api/usuarios", methods=["GET"])
@@ -30,7 +30,7 @@ def crear():
         return jsonify({"error": error}), 400
 
     if data["rol"] not in TABLA_POR_ROL:
-        return jsonify({"error": "Rol inv\u00e1lido. Debe ser: usuario, tecnico o admin"}), 400
+        return jsonify({"error": "Rol inv\u00e1lido. Debe ser: usuario, tecnico, admin o areati"}), 400
 
     tabla = TABLA_POR_ROL[data["rol"]]
     username = data["username"].strip().lower()

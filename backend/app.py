@@ -34,8 +34,9 @@ def uploaded_file(filename):
 def get_tecnicos():
     from database import supabase as sup
     from flask import jsonify
-    result = sup.table("tecnicos").select("username, nombre").order("nombre").execute()
-    return jsonify(result.data)
+    tecnicos = sup.table("tecnicos").select("username, nombre").order("nombre").execute().data
+    area_ti_list = sup.table("area_ti").select("username, nombre").order("nombre").execute().data
+    return jsonify(tecnicos + area_ti_list)
 
 
 @app.route("/api/conocimiento", methods=["GET"])

@@ -9,7 +9,8 @@ let tecnicosCache = null;
 const ROLE_SCREENS = {
   tecnico: ["dashboard", "nuevo", "tickets", "panel", "conocimiento", "ml"],
   usuario: ["nuevo", "tickets"],
-  admin: ["dashboard", "nuevo", "tickets", "conocimiento", "ml", "admin"]
+  admin: ["dashboard", "nuevo", "tickets", "conocimiento", "ml", "admin"],
+  areati: ["dash-ti", "nuevo", "tickets-ti", "panel-ti", "conocimiento", "ml"]
 };
 
 function initAuth() {
@@ -60,12 +61,12 @@ function applyLogin() {
 
   const initials = currentUser.nombre.split(" ").filter(Boolean).slice(0, 2).map(w => w[0]).join("").toUpperCase();
   document.getElementById("user-av").textContent = initials;
-  const roleLabel = { tecnico: "TI", usuario: "Usuario", admin: "Admin" };
+  const roleLabel = { tecnico: "TI", usuario: "Usuario", admin: "Admin", areati: "Área TI" };
   document.getElementById("user-name").textContent = `${currentUser.nombre} · ${roleLabel[currentUser.rol] || currentUser.rol}`;
 
   const allowed = ROLE_SCREENS[currentUser.rol] || [];
   document.querySelectorAll("#sidebar > .ni").forEach(ni => {
-    const m = (ni.getAttribute("onclick") || "").match(/goto\('(\w+)'\)/);
+    const m = (ni.getAttribute("onclick") || "").match(/goto\('([\w-]+)'\)/);
     ni.style.display = (m && !allowed.includes(m[1])) ? "none" : "";
   });
   let lastLabel = null, groupVisible = false;
@@ -88,13 +89,14 @@ function applyLogin() {
     usrInput.disabled = false; areaSel.disabled = false;
   }
 
-  document.getElementById("th-accion").style.display = currentUser.rol === "tecnico" ? "" : "none";
+  document.getElementById("th-accion").style.display = (currentUser.rol === "tecnico" || currentUser.rol === "areati") ? "" : "none";
 
-  goto(allowed.includes("dashboard") ? "dashboard" : "nuevo");
+  const defaultScreen = allowed.find(s => s.startsWith("dash") || s === "nuevo") || "nuevo";
+  goto(defaultScreen);
 }
 
 // ── NAVIGATION ──
-const titles = { dashboard: "Dashboard", nuevo: "Nuevo Ticket", tickets: "Mis Tickets", panel: "Panel Técnico", conocimiento: "Base de Conocimiento", ml: "Predicción ML", admin: "Admin Usuarios" };
+const titles = { dashboard: "Dashboard", nuevo: "Nuevo Ticket", tickets: "Mis Tickets", panel: "Panel Técnico", conocimiento: "Base de Conocimiento", ml: "Predicción ML", admin: "Admin Usuarios", "dash-ti": "Dashboard TI", "tickets-ti": "Tickets TI", "panel-ti": "Panel TI" };
 function goto(s) {
   if (currentUser && ROLE_SCREENS[currentUser.rol] && !ROLE_SCREENS[currentUser.rol].includes(s)) {
     toast("⛔ No tienes acceso a esta sección");
@@ -108,8 +110,11 @@ function goto(s) {
   document.getElementById("det-panel").style.display = "none";
   document.getElementById("close-panel").style.display = "none";
   if (s === "dashboard") loadDash();
+  if (s === "dash-ti") loadDashTI();
   if (s === "tickets") loadTickets();
+  if (s === "tickets-ti") loadTicketsTI();
   if (s === "panel") loadPanel();
+  if (s === "panel-ti") loadPanelTI();
   if (s === "conocimiento") loadKB();
   if (s === "ml") loadML();
   if (s === "admin") loadAdmin();
@@ -245,23 +250,11 @@ async function loadTickets() {
   const params = new URLSearchParams();
   if (est) params.set("estado", est);
   if (currentUser && currentUser.rol === "usuario") params.set("usuario", currentUser.nombre);
-  let tickets;
-  if (currentUser && currentUser.rol === "tecnico") {
-    const r1 = await fetch(API + "/api/tickets?tecnico=" + encodeURIComponent(currentUser.nombre) + (est ? `&estado=${est}` : ""));
-    let misTickets = await r1.json();
-    const idsGuardados = JSON.parse(localStorage.getItem("td_escalados") || "[]");
-    if (idsGuardados.length > 0) {
-      const escalados = await fetch(API + "/api/tickets?estado=Escalado").then(r => r.json());
-      const misEscalados = escalados.filter(e => idsGuardados.includes(e.id) && !misTickets.find(t => t.id === e.id));
-      misTickets = [...misTickets, ...misEscalados];
-    }
-    tickets = misTickets;
-  } else {
-    const qs = params.toString();
-    const url = API + "/api/tickets" + (qs ? `?${qs}` : "");
-    const r = await fetch(url);
-    tickets = await r.json();
-  }
+  if (currentUser && currentUser.rol === "tecnico") params.set("tecnico", currentUser.nombre);
+  const qs = params.toString();
+  const url = API + "/api/tickets" + (qs ? `?${qs}` : "");
+  const r = await fetch(url);
+  let tickets = await r.json();
   const esTecnico = currentUser && currentUser.rol === "tecnico";
   document.getElementById("tbl-tickets").innerHTML = tickets.map(t => `
     <tr id="row-${t.id}" onclick="showDet(${t.id})">
@@ -361,6 +354,8 @@ function openCloseFromTickets(id, num, desc, estadoActual, prioridadActual, cate
   document.getElementById("t-prioridad-sel").value = prioridadActual || "Media";
   document.getElementById("t-categoria-sel").value = categoriaActual || "ERP Corporativo";
   cargarTecnicosSelect();
+  document.getElementById("escalar-row").style.display = (currentUser && currentUser.rol === "areati") ? "none" : "";
+  document.getElementById("t-tecnico-sel").style.display = "none";
   document.getElementById("close-panel").style.display = "block";
   document.getElementById("close-panel").scrollIntoView({ behavior: "smooth", block: "nearest" });
   document.getElementById("det-panel").style.display = "none";
@@ -419,18 +414,18 @@ async function cerrarTicket() {
 }
 
 async function escalarTicket() {
-  const tecnico = document.getElementById("t-tecnico-sel").value;
+  const rUsers = await fetch(API + "/api/usuarios");
+  const users = await rUsers.json();
+  const tiMembers = users.filter(u => u.rol === "areati");
+  const elegido = tiMembers[Math.floor(Math.random() * tiMembers.length)];
+  if (!elegido) { toast("⚠ No hay personal de Área TI disponible"); return }
+  const tecnico = elegido.nombre;
   const r = await fetch(`${API}/api/tickets/${selPanelId}/escalar`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ tecnico })
   });
   const d = await r.json();
-  const ids = JSON.parse(localStorage.getItem("td_escalados") || "[]");
-  if (!ids.includes(selPanelId)) {
-    ids.push(selPanelId);
-    localStorage.setItem("td_escalados", JSON.stringify(ids));
-  }
   toast("⬆ " + d.mensaje);
   document.getElementById("close-panel").style.display = "none";
   loadPanel();
@@ -727,6 +722,113 @@ async function eliminarUsuario(tabla, id, nombre) {
   const d = await r.json();
   toast(d.mensaje || d.error);
   loadAdmin();
+}
+
+// ── DASHBOARD TI ──
+async function loadDashTI() {
+  document.getElementById("dash-fecha-ti").textContent = new Date().toLocaleDateString("es-PE", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+  try {
+    const r = await fetch(API + "/api/kpis?equipo=Area+TI");
+    const d = await r.json();
+    document.getElementById("kgrid-ti").innerHTML = `
+      <div class="kcard r"><div class="kl">Tickets Abiertos</div><div class="kv">${d.abiertos}</div><div class="ks">Total: ${d.total}</div><div class="kic">🎫</div></div>
+      <div class="kcard g"><div class="kl">Cerrados Hoy</div><div class="kv">${d.cerrados_hoy}</div><div class="ks">Histórico registrado</div><div class="kic">✅</div></div>
+      <div class="kcard b"><div class="kl">Tpo. Prom. Resolución</div><div class="kv">${d.tpo_prom_horas}h</div><div class="ks">Promedio histórico</div><div class="kic">⏱</div></div>
+      <div class="kcard y"><div class="kl">Satisfacción</div><div class="kv">${d.satisfaccion}%</div><div class="ks">Encuestas piloto</div><div class="kic">⭐</div></div>`;
+    const cats = d.por_categoria; const maxv = Math.max(...cats.map(c => c.total), 1);
+    const colors = ["#3949ab", "#0277bd", "#7b1fa2", "#2e7d32", "#e65100", "#795548"];
+    document.getElementById("chart-cat-ti").innerHTML = cats.map((c, i) => `
+      <div class="bc">
+        <div class="bv">${c.total}</div>
+        <div class="bar" style="height:${Math.max(8, c.total / maxv * 130)}px;background:${colors[i % colors.length]}"></div>
+        <div class="bl">${catCode(c.categoria)}</div>
+      </div>`).join("");
+    const tecs = d.por_tecnico; const maxt = Math.max(...tecs.map(t => t.total), 1);
+    document.getElementById("chart-tec-ti").innerHTML = tecs.map(t => `
+      <div class="hr">
+        <div class="hn">${t.tecnico.split(" ")[0]} ${(t.tecnico.split(" ")[1] || "").charAt(0)}.</div>
+        <div class="ht"><div class="hf" style="width:${Math.round(t.total / maxt * 100)}%"></div></div>
+        <div class="hnum">${t.total}</div>
+      </div>`).join("");
+    document.getElementById("dash-tbl-ti").innerHTML = d.recientes.map(t => `
+      <tr>
+        <td><strong>${t.numero}</strong></td><td>${t.descripcion.substring(0, 45)}</td>
+        <td>${bCat(t.categoria)}</td><td>${bPrio(t.prioridad)}</td><td>${bEst(t.estado)}</td>
+        <td>${t.tecnico || "–"}</td><td>${fmtFecha(t.fecha_creacion)}</td>
+      </tr>`).join("");
+    const pend = d.por_estado.find(e => e.estado === "Pendiente" || e.estado === "En Proceso");
+    document.getElementById("badge-ti").textContent = pend ? pend.total : 0;
+  } catch (e) { document.getElementById("kgrid-ti").innerHTML = `<div style="color:var(--red);padding:20px;grid-column:1/-1">❌ Error</div>` }
+}
+
+// ── TICKETS TI ──
+async function loadTicketsTI() {
+  const est = document.getElementById("f-estado-ti").value;
+  const params = new URLSearchParams();
+  if (est) params.set("estado", est);
+  params.set("equipo", "Area TI");
+  const r = await fetch(API + "/api/tickets?" + params.toString());
+  const tickets = await r.json();
+  document.getElementById("tbl-tickets-ti").innerHTML = tickets.map(t => `
+    <tr>
+      <td><strong>${t.numero}</strong></td><td>${t.descripcion.substring(0, 45)}</td>
+      <td>${bCat(t.categoria)}</td><td>${bPrio(t.prioridad)}</td><td>${bEst(t.estado)}</td>
+      <td>${t.tecnico || "–"}</td><td>${fmtFecha(t.fecha_creacion)}</td>
+      <td>
+        ${t.estado === "Resuelto" ? `<span class="badge Resuelto" style="font-size:12px">✅ Atendido</span>` :
+          `<button class="btn bp bsm" onclick="openCloseFromTickets(${t.id},'${t.numero}','${t.descripcion.replace(/'/g, "\\'")}','${t.estado}','${t.prioridad}','${t.categoria}')">Atender</button>`}
+      </td>
+    </tr>
+  `).join("");
+  const pend = tickets.filter(t => t.estado === "Pendiente" || t.estado === "En Proceso");
+  document.getElementById("badge-ti").textContent = pend.length;
+}
+function filterTicketsTI() {
+  const input = document.getElementById("search-tickets-ti");
+  const filter = input.value.toLowerCase();
+  const rows = document.querySelectorAll("#tbl-tickets-ti tr");
+  rows.forEach(row => {
+    row.style.display = row.textContent.toLowerCase().includes(filter) ? "" : "none";
+  });
+}
+
+// ── PANEL TI ──
+async function loadPanelTI() {
+  document.getElementById("panel-ti-nombre").textContent = currentUser ? currentUser.nombre : "";
+  const r = await fetch(API + "/api/kpis?equipo=Area+TI");
+  const d = await r.json();
+  const byEst = Object.fromEntries(d.por_estado.map(e => [e.estado, e.total]));
+  document.getElementById("pt-pend").textContent = byEst["Pendiente"] || 0;
+  document.getElementById("pt-proc").textContent = byEst["En Proceso"] || 0;
+  document.getElementById("pt-cerr").textContent = d.cerrados_hoy;
+  document.getElementById("pt-alta").textContent = 0;
+
+  const r2 = await fetch(API + "/api/tickets?equipo=Area+TI&limit=50");
+  const tickets = await r2.json();
+  const open = tickets.filter(t => t.estado !== "Resuelto");
+  document.getElementById("pt-alta").textContent = open.filter(t => t.prioridad === "Alta").length;
+
+  if (!tecnicosCache) {
+    try {
+      const rt = await fetch(API + "/api/tecnicos");
+      tecnicosCache = await rt.json();
+    } catch (e) { tecnicosCache = [] }
+  }
+
+  document.getElementById("tbl-panel-ti").innerHTML = open.map(t => `
+    <tr>
+      <td><strong>${t.numero}</strong></td><td>${t.descripcion.substring(0, 45)}</td>
+      <td>${bCat(t.categoria)}</td><td>${bPrio(t.prioridad)}</td><td>${bEst(t.estado)}</td>
+    </tr>
+  `).join("");
+}
+function filterPanelTI() {
+  const input = document.getElementById("search-panel-ti");
+  const filter = input.value.toLowerCase();
+  const rows = document.querySelectorAll("#tbl-panel-ti tr");
+  rows.forEach(row => {
+    row.style.display = row.textContent.toLowerCase().includes(filter) ? "" : "none";
+  });
 }
 
 // Init

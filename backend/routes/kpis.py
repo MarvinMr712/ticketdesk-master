@@ -10,10 +10,15 @@ sup = db.supabase
 def kpis():
     ahora = datetime.now()
     tecnico = request.args.get("tecnico")
+    equipo = request.args.get("equipo")
     tickets = sup.table("tickets").select("*").execute().data
 
     if tecnico:
         tickets = [t for t in tickets if t.get("tecnico") == tecnico]
+    if equipo and equipo == "Area TI":
+        miembros = sup.table("area_ti").select("nombre").execute().data
+        nombres = [m["nombre"] for m in miembros] + ["Area TI", "\u00c1rea TI"]
+        tickets = [t for t in tickets if t.get("tecnico") in nombres]
 
     abiertos = sum(1 for t in tickets if t["estado"] != "Resuelto")
     total = len(tickets)
